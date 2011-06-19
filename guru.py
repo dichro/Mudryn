@@ -44,6 +44,11 @@ HELP_MSG = ("I am the amazing Crowd Guru. Ask me a question by typing '/tellme "
 MAX_ANSWER_TIME = 120
 
 
+class Avatar(db.Model):
+  identity = db.IMProperty(required=True)
+  location = db.TextProperty(required=True)
+
+
 class Question(db.Model):
   question = db.TextProperty(required=True)
   asker = db.IMProperty(required=True)
@@ -156,6 +161,16 @@ class XmppHandler(xmpp_handlers.CommandHandler):
       currently_answering.unassign(im_from)
 
   def text_message(self, message=None):
+    sender = db.IM("xmpp", message.sender)
+    q_avatar = Avatar.all();
+    q_avatar.filter("identity =", sender);
+    avatar = q_avatar.get();
+    if avatar is None:
+      xmpp.send_message([message.sender], "You don't exist.")
+    else:
+      xmpp.send_message([message.sender], "You exist.")
+    
+  def old_text_message(self, message=None):
     im_from = db.IM("xmpp", message.sender)
     question = self._GetAnswering(im_from)
     if question:
