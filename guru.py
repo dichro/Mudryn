@@ -17,14 +17,16 @@ import logging
 import os
 import re
 import wsgiref.handlers
+import sys
+
 from google.appengine.api import xmpp
 from google.appengine.api import users
 from google.appengine.ext import db
+from google.appengine.ext.db import polymodel
 from google.appengine.ext import webapp
 from google.appengine.ext.ereporter import report_generator
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import xmpp_handlers
-
 
 PONDER_MSG = "Hmm. Let me think on that a bit."
 TELLME_MSG = "While I'm thinking, perhaps you can answer me this: %s"
@@ -44,9 +46,135 @@ HELP_MSG = ("I am the amazing Crowd Guru. Ask me a question by typing '/tellme "
 MAX_ANSWER_TIME = 120
 
 
-class Avatar(db.Model):
+def get_class( kls ):
+  parts = kls.split('.')
+  module = ".".join(parts[:-1])
+  m = __import__( module )
+  for comp in parts[1:]:
+    m = getattr(m, comp)            
+  return m
+
+
+class Room(object):
+  aliases = {
+    'n': 'north',
+    's': 'south',
+    'e': 'east',
+    'w': 'west',
+  }
+  exits = {}
+  desc = 'Nowhere'
+
+  def __init__(self, location):
+    pass
+
+  def get_location(self):
+    return '.'.join([self.__class__.__module__, self.__class__.__name__])
+
+  def description(self, viewer):
+    ret = self.desc
+    contents = Mobile.all().filter("location =", self.get_location())
+    item_names = [item.summary() for item in contents if item != viewer]
+    if item_names:
+      ret += ' You see: '
+      if len(item_names) > 1:
+        ret += ', '.join(x for x in item_names[:-1]) + ' and '
+      ret += item_names[-1] + '.'
+    if self.exits:
+      ret += ' You can go: '
+      exit_names = self.exits.keys()
+      if len(exit_names) > 1:
+        ret += ', '.join(x for x in exit_names[:-1]) + ' and '
+      ret += exit_names[-1] + '.'
+    return ret
+
+  def handle_input(self, actor, message):
+    words = message.arg.split()
+    cmd = words[0]
+    if cmd in self.aliases:
+      cmd = self.aliases[cmd]
+    if cmd in self.exits:
+      destination = self.exits[cmd]
+      # TODO(dichro): test dest is valid?
+      actor.location = destination
+      actor.put()
+      return 'You go ' + cmd + '. ' + get_class(destination)(destination).description(actor)
+
+
+class Start(Room):
+  desc = 'Start room description.'
+  exits = {
+    'north': '__main__.Next'
+  }
+
+
+class Next(Start):
+  desc = 'Next room description'
+  exits = {
+    'south': '__main__.Start',
+    'north': '__main__.test',
+  }
+
+
+def room(name, d, e):
+  class new_room(Room):
+    desc = d
+    exits = e
+  return new_room
+
+
+test = room('test', 'Test room description',
+  { 'south': '__main__.Next',
+    'north': '__main__.test2', })
+
+test2 = room('test', 'Test2 room description',
+  { 'south': '__main__.test',
+    'north': '__main__.Start' })
+
+
+class Mobile(polymodel.PolyModel):
+  """An object that moves between physical locations."""
+  
+  location = db.StringProperty(required=True)
+
+  def summary(self):
+    return 'thing'
+
+
+class Avatar(Mobile):
   identity = db.IMProperty(required=True)
-  location = db.TextProperty(required=True)
+  handle = db.TextProperty(required=True)
+
+  def summary(self):
+    return '@' + self.handle
+
+  commands = {
+    'look': 1
+  }
+  
+  def handle_input(self, message):
+    words = message.arg.split()
+    if words[0] in self.commands:
+      xmpp.send_message([self.identity.address], 'I recognize that command')
+      # look
+      room = get_class(self.location)(self.location)
+      xmpp.send_message([self.identity.address], room.description(self))
+    else:
+      room = get_class(self.location)(self.location)
+      ret = room.handle_input(self, message)
+      if ret is not None:
+        xmpp.send_message([self.identity.address], ret)
+      else:
+        xmpp.send_message([self.identity.address], "I don't recognize that command")
+
+  def __eq__(self, other):
+    return hasattr(other, 'identity') and other.identity == self.identity
+
+  def __ne__(self, other):
+    return not self.__eq__(other)
+
+  def __hash__(self):
+    return self.identity.__hash__()
 
 
 class Question(db.Model):
@@ -127,6 +255,23 @@ class Question(db.Model):
     db.run_in_transaction(self._unassignTx, user)
 
 
+class InputHandler(object):
+  @staticmethod
+  def handle_input(message):
+    words = message.arg.split()
+    if words[0] == 'create':
+      # TODO(dichro): sanitize input
+      xmpp.send_message([message.sender], 'Creating!')
+      Avatar(identity=db.IM("xmpp", message.sender), location='__main__.Start', handle=words[1]).put()
+      xmpp.send_message([message.sender], 'Done')
+    else:
+      InputHandler.defaultHelp(message)
+
+  @staticmethod
+  def defaultHelp(message):
+    xmpp.send_message([message.sender], 'This is Mudryn. Type "create" to join.')
+
+
 class XmppHandler(xmpp_handlers.CommandHandler):
   """Handler class for all XMPP activity."""
 
@@ -166,9 +311,9 @@ class XmppHandler(xmpp_handlers.CommandHandler):
     q_avatar.filter("identity =", sender);
     avatar = q_avatar.get();
     if avatar is None:
-      xmpp.send_message([message.sender], "You don't exist.")
+      InputHandler.handle_input(message)
     else:
-      xmpp.send_message([message.sender], "You exist.")
+      avatar.handle_input(message)
     
   def old_text_message(self, message=None):
     im_from = db.IM("xmpp", message.sender)
@@ -250,3 +395,4 @@ def main():
 
 if __name__ == '__main__':
   main()
+
