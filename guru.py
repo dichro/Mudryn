@@ -59,7 +59,7 @@ class InputHandler(object):
     if words[0] == 'create':
       # TODO(dichro): sanitize input
       xmpp.send_message([message.sender], 'Creating!')
-      Avatar(identity=db.IM("xmpp", message.sender), location='__main__.Start', handle=words[1]).put()
+      Avatar(identity=db.IM("xmpp", message.sender), location='__main__.Start', handle=words[1], tags=['listening']).put()
       xmpp.send_message([message.sender], 'Done')
     else:
       InputHandler.defaultHelp(message)

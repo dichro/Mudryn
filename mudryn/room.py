@@ -18,10 +18,10 @@ class Room(object):
   desc = ''
 
   def __init__(self, location):
-    pass
+    self.location = location
 
   def get_location(self):
-    return '.'.join([self.__class__.__module__, self.__class__.__name__])
+    return self.location
 
   def description(self, viewer):
     ret = self.desc
@@ -47,9 +47,30 @@ class Room(object):
       cmd = self.aliases[cmd]
     if cmd in self.exits:
       destination = self.exits[cmd]
-      # TODO(dichro): test dest is valid?
-      actor.location = destination
-      actor.put()
-      return 'You go ' + cmd + '. ' + get_class(destination)(destination).description(actor)
+      dest_room = get_class(destination)(destination)
+      response = dest_room.receive_mobile(actor)
+      notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(100)
+      if len(notify) == 100:
+        # TODO(dichro): throng mode!
+        pass
+      else:
+        if len(notify) > 0:
+          actor.notify_others(actor.summary() + ' leaves ' + cmd + '.', notify)
+      return 'You went ' + cmd + '. ' + response
 
-
+  def receive_mobile(self, actor):
+    actor.location = self.get_location()
+    actor.put()
+    notify = db.Avatar.all()
+    notify.filter("location =", self.get_location())
+    notify.filter("tags =", "listening")
+    results = notify.fetch(100)
+    if len(results) == 100:
+      # TODO(dichro): throng mode!
+      # TODO(dichro): we're retrieving a superset of this data in description()
+      #  immediately hereafter. There Must Be A Better Way.
+      pass
+    else:
+      if len(results) > 0:
+        actor.notify_others(actor.summary() + ' arrives.', results)
+    return self.description(actor)

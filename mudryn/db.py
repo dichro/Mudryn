@@ -1,7 +1,8 @@
 """Database-backed objects."""
 
-from google.appengine.api import xmpp
+import sys
 
+from google.appengine.api import xmpp
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
 
@@ -20,6 +21,14 @@ class Mobile(polymodel.PolyModel):
 class Avatar(Mobile):
   identity = db.IMProperty(required=True)
   handle = db.TextProperty(required=True)
+  tags = db.StringListProperty()
+
+  def notify_others(self, message, destinations):
+    dest = [avatar.identity.address for avatar in destinations
+            if avatar != self]
+    if len(dest) == 0:
+      return
+    xmpp.send_message(dest, message)
 
   def summary(self):
     return '@' + self.handle
@@ -30,8 +39,20 @@ class Avatar(Mobile):
 
   def handle_input(self, message):
     words = message.arg.split()
+    if words[0] == 'unmute':
+      self.tags.append('listening')
+      self.put()
+      return
+    if words[0] == 'mute':
+      self.tags.remove('listening')
+      self.put()
+      xmpp.send_message([self.identity.address], 'Going catatonic. '
+        'Type "unmute" to hear the world again.')
+      return
+    if 'listening' not in self.tags:
+      xmpp.send_message([self.identity.address], 'You are muted! '
+        'Type "unmute" to hear the world again.')
     if words[0] in self.commands:
-      xmpp.send_message([self.identity.address], 'I recognize that command')
       # look
       room = get_class(self.location)(self.location)
       xmpp.send_message([self.identity.address], room.description(self))
