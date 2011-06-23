@@ -36,7 +36,7 @@ class InputHandler(object):
 
   @staticmethod
   def defaultHelp(message):
-    xmpp.send_message([message.sender], 'This is Mudryn. Type "create" to join.')
+    xmpp.send_message([message.sender], 'This is Mudryn. Type "create <name>" to join, eg "create zarathustra".')
 
 
 class XmppHandler(xmpp_handlers.CommandHandler):
