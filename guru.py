@@ -20,39 +20,6 @@ from mudryn.room import Room
 
 import config
 
-class Start(Room):
-  desc = 'Start room description.'
-  exits = {
-    'north': '__main__.Next',
-    'south': '__main__.test2',
-    'east': 'realms.village.rooms.start',
-  }
-
-
-class Next(Start):
-  desc = 'Next room description'
-  exits = {
-    'south': '__main__.Start',
-    'north': '__main__.test',
-  }
-
-
-def roomx(name, d, e):
-  class new_room(Room):
-    desc = d
-    exits = e
-  return new_room
-
-
-test = roomx('test', 'Test room description',
-  { 'south': '__main__.Next',
-    'north': '__main__.test2', })
-
-test2 = roomx('test', 'Test2 room description',
-  { 'south': '__main__.test',
-    'north': '__main__.Start' })
-
-
 class InputHandler(object):
   @staticmethod
   def handle_input(message):
