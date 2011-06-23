@@ -19,7 +19,27 @@ class Room(object):
 
   def __init__(self, location):
     self.location = location
+    self.commands = dict((x, self.cmd_go) for x in self.exits)
+    self.commands['look'] = self.cmd_look
 
+  def cmd_go(self, actor, cmd, *args):
+    """Move to a connected room."""
+    destination = self.exits[cmd]
+    dest_room = get_class(destination)(destination)
+    response = dest_room.receive_mobile(actor)
+    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(100)
+    if len(notify) == 100:
+      # TODO(dichro): throng mode!
+      pass
+    else:
+      if len(notify) > 0:
+        actor.notify_others(actor.summary() + ' leaves ' + cmd + '.', notify)
+    return 'You went ' + cmd + '. ' + response
+    
+  def cmd_look(self, actor, argv0, *args):
+    """View this room from the inside."""
+    return self.description(actor)
+    
   def get_location(self):
     return self.location
 
@@ -45,18 +65,8 @@ class Room(object):
     cmd = words[0]
     if cmd in self.aliases:
       cmd = self.aliases[cmd]
-    if cmd in self.exits:
-      destination = self.exits[cmd]
-      dest_room = get_class(destination)(destination)
-      response = dest_room.receive_mobile(actor)
-      notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(100)
-      if len(notify) == 100:
-        # TODO(dichro): throng mode!
-        pass
-      else:
-        if len(notify) > 0:
-          actor.notify_others(actor.summary() + ' leaves ' + cmd + '.', notify)
-      return 'You went ' + cmd + '. ' + response
+    if cmd in self.commands:
+      return self.commands[cmd](actor, cmd, words[1:])
 
   def receive_mobile(self, actor):
     actor.location = self.get_location()
