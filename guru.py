@@ -18,6 +18,7 @@ from mudryn.lib import get_class
 from mudryn.db import Mobile, Avatar
 from mudryn.room import Room
 
+import config
 
 class Start(Room):
   desc = 'Start room description.'
@@ -59,7 +60,9 @@ class InputHandler(object):
     if words[0] == 'create':
       # TODO(dichro): sanitize input
       xmpp.send_message([message.sender], 'Creating!')
-      Avatar(identity=db.IM("xmpp", message.sender), location='__main__.Start', handle=words[1], tags=['listening']).put()
+      Avatar(identity=db.IM("xmpp", message.sender), 
+             location=config.default_room, handle=words[1], 
+             tags=['listening']).put()
       xmpp.send_message([message.sender], 'Done')
     else:
       InputHandler.defaultHelp(message)

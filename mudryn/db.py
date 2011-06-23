@@ -8,6 +8,8 @@ from google.appengine.ext.db import polymodel
 
 from mudryn.lib import get_class
 
+import config
+
 
 class Mobile(polymodel.PolyModel):
   """An object that moves between physical locations."""
@@ -52,12 +54,19 @@ class Avatar(Mobile):
     if 'listening' not in self.tags:
       xmpp.send_message([self.identity.address], 'You are muted! '
         'Type "unmute" to hear the world again.')
+    try:
+      room = get_class(self.location)(self.location)
+    except:
+      xmpp.send_message([self.identity.address],
+                        'Failed to load your last location. Sending you back '
+                        'to the start.')
+      room = get_class(config.default_room)(config.default_room)
+      self.location = config.default_room
+      self.put()
     if words[0] in self.commands:
       # look
-      room = get_class(self.location)(self.location)
       xmpp.send_message([self.identity.address], room.description(self))
     else:
-      room = get_class(self.location)(self.location)
       ret = room.handle_input(self, message)
       if ret is not None:
         xmpp.send_message([self.identity.address], ret)
