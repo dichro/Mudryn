@@ -5,5 +5,7 @@ repository, create app.yaml from sample-app.yaml with a changed application
 name, and upload to App Engine to be up and running (or use the dev_appserver 
 on your own machine, obviously).
 
+Or just gchat with mudryn@appspot.com to play the current state of the code.
+
 Mikolaj Habryn
 dichro@rcpt.to
