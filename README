@@ -1,9 +1,9 @@
 This is a simple MUD, in LPMud style. Or at least, feeling nostalgic about
 LPMuds started me writing it. It targets App Engine as a backend, uses XMPP
 (aka google chat) to connect, and you should be able to just clone the
-repository, change the application name in app.yaml, and upload to App 
-Engine to be up and running (or use the dev_appserver on your own machine,
-obviously).
+repository, create app.yaml from sample-app.yaml with a changed application
+name, and upload to App Engine to be up and running (or use the dev_appserver 
+on your own machine, obviously).
 
 Mikolaj Habryn
 dichro@rcpt.to
