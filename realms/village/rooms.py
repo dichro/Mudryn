@@ -46,6 +46,7 @@ castlegate = room('You are at the gates to a castle.', {
 
 graveroad1 = room('This narrow and somewhat unkempt road leads west.', {
   'east': 'northroad2',
+  'west': 'realms.village.room.toad.Room',
 })
 
 townhall = room('You are in a town hall.', {

@@ -1,7 +1,5 @@
 """Database-backed objects."""
 
-import sys
-
 from google.appengine.api import xmpp
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
@@ -36,7 +34,6 @@ class Avatar(Mobile):
     return '@' + self.handle
 
   commands = {
-    'look': 1
   }
 
   def handle_input(self, message):

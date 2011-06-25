@@ -22,7 +22,7 @@ class Room(object):
     self.commands = dict((x, self.cmd_go) for x in self.exits)
     self.commands['look'] = self.cmd_look
 
-  def cmd_go(self, actor, cmd, *args):
+  def cmd_go(self, actor, cmd, args):
     """Move to a connected room."""
     destination = self.exits[cmd]
     dest_room = get_class(destination)(destination)
@@ -36,7 +36,7 @@ class Room(object):
         actor.notify_others(actor.summary() + ' leaves ' + cmd + '.', notify)
     return 'You went ' + cmd + '. ' + response
     
-  def cmd_look(self, actor, argv0, *args):
+  def cmd_look(self, actor, argv0, args):
     """View this room from the inside."""
     return self.description(actor)
     

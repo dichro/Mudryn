@@ -3,7 +3,6 @@ import logging
 import os
 import re
 import wsgiref.handlers
-import sys
 
 from google.appengine.api import xmpp
 from google.appengine.api import users
