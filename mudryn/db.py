@@ -22,6 +22,10 @@ class Avatar(Mobile):
   identity = db.IMProperty(required=True)
   handle = db.TextProperty(required=True)
   tags = db.StringListProperty()
+  char_aliases = {
+    "'": 'say',
+    ':': 'emote',
+  }
 
   def notify_others(self, message, destinations):
     dest = [avatar.identity.address for avatar in destinations
@@ -49,8 +53,10 @@ class Avatar(Mobile):
     if 'listening' not in self.tags:
       xmpp.send_message([self.identity.address], 'You are muted! '
         'Type "unmute" to hear the world again.')
-    if line[0] == "'":
-      line = 'say ' + line[1:]
+    try:
+      line = self.char_aliases[line[0]] + ' ' + line[1:]
+    except KeyError, e:
+      pass
     try:
       room = get_class(self.location)(self.location)
     except:
