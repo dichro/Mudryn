@@ -34,7 +34,8 @@ class Avatar(Mobile):
     return '@' + self.handle
 
   def handle_input(self, message):
-    words = message.arg.split()
+    line = message.arg
+    words = line.split()
     if words[0] == 'unmute':
       self.tags.append('listening')
       self.put()
@@ -48,6 +49,8 @@ class Avatar(Mobile):
     if 'listening' not in self.tags:
       xmpp.send_message([self.identity.address], 'You are muted! '
         'Type "unmute" to hear the world again.')
+    if line[0] == "'":
+      line = 'say ' + line[1:]
     try:
       room = get_class(self.location)(self.location)
     except:
@@ -57,7 +60,7 @@ class Avatar(Mobile):
       room = get_class(config.default_room)(config.default_room)
       self.location = config.default_room
       self.put()
-    ret = room.handle_input(self, message)
+    ret = room.handle_input(self, line)
     if ret is not None:
       xmpp.send_message([self.identity.address], ret)
     else:

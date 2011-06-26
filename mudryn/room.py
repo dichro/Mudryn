@@ -73,8 +73,8 @@ class Room(object):
       ret += exit_names[-1] + '.'
     return ret
 
-  def handle_input(self, actor, message):
-    words = message.arg.split()
+  def handle_input(self, actor, command):
+    words = command.split()
     cmd = words[0]
     if cmd in self.aliases:
       cmd = self.aliases[cmd]
