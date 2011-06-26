@@ -16,19 +16,32 @@ class Room(object):
   }
   exits = {}
   desc = ''
+  throng_cutoff = 100
 
   def __init__(self, location):
     self.location = location
     self.commands = dict((x, self.cmd_go) for x in self.exits)
     self.commands['look'] = self.cmd_look
+    self.commands['say'] = self.cmd_say
+    # TODO(dichro): commands exist if self.cmd_<verb> exists?
+
+  def cmd_say(self, actor, cmd, args):
+    """Speak to the listening users in this room."""
+    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
+    if len(notify) == self.throng_cutoff:
+      return "You can't make yourself heard over the throng."
+    # TODO(dichro): want the original string here instead. Change
+    #   cmd api to be kwargs with everything inc kitchen sink
+    actor.notify_others(actor.summary() + ' says: ' + ' '.join(args), notify)
+    return 'You say: ' + ' '.join(args)
 
   def cmd_go(self, actor, cmd, args):
     """Move to a connected room."""
     destination = self.exits[cmd]
     dest_room = get_class(destination)(destination)
     response = dest_room.receive_mobile(actor)
-    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(100)
-    if len(notify) == 100:
+    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
+    if len(notify) == self.throng_cutoff:
       # TODO(dichro): throng mode!
       pass
     else:
@@ -74,8 +87,8 @@ class Room(object):
     notify = db.Avatar.all()
     notify.filter("location =", self.get_location())
     notify.filter("tags =", "listening")
-    results = notify.fetch(100)
-    if len(results) == 100:
+    results = notify.fetch(self.throng_cutoff)
+    if len(results) == self.throng_cutoff:
       # TODO(dichro): throng mode!
       # TODO(dichro): we're retrieving a superset of this data in description()
       #  immediately hereafter. There Must Be A Better Way.
