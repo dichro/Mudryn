@@ -24,7 +24,23 @@ class Room(object):
     self.commands['look'] = self.cmd_look
     self.commands['say'] = self.cmd_say
     # TODO(dichro): commands exist if self.cmd_<verb> exists?
+    self.commands['emote'] = self.cmd_emote
 
+  def broadcast(self, actor, message):
+    """Broadcast message unless thronging."""
+    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
+    if len(notify) == self.throng_cutoff:
+      return False
+    actor.notify_others(message, notify)
+    return True
+    
+  def cmd_emote(self, actor, cmd, args):
+    """Emote to the room's listeners."""
+    msg = actor.summary() + ' ' + ' '.join(args)
+    if not self.broadcast(actor, msg):
+      return "Too many hipsters in this room."
+    return 'Everyone saw: ' + msg
+    
   def cmd_say(self, actor, cmd, args):
     """Speak to the listening users in this room."""
     notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
