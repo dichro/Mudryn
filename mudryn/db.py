@@ -33,9 +33,6 @@ class Avatar(Mobile):
   def summary(self):
     return '@' + self.handle
 
-  commands = {
-  }
-
   def handle_input(self, message):
     words = message.arg.split()
     if words[0] == 'unmute':
@@ -60,15 +57,11 @@ class Avatar(Mobile):
       room = get_class(config.default_room)(config.default_room)
       self.location = config.default_room
       self.put()
-    if words[0] in self.commands:
-      # look
-      xmpp.send_message([self.identity.address], room.description(self))
+    ret = room.handle_input(self, message)
+    if ret is not None:
+      xmpp.send_message([self.identity.address], ret)
     else:
-      ret = room.handle_input(self, message)
-      if ret is not None:
-        xmpp.send_message([self.identity.address], ret)
-      else:
-        xmpp.send_message([self.identity.address], "I don't recognize that command")
+      xmpp.send_message([self.identity.address], "I don't recognize that command")
 
   def __eq__(self, other):
     return hasattr(other, 'identity') and other.identity == self.identity
