@@ -43,12 +43,10 @@ class Room(object):
     
   def cmd_say(self, actor, cmd, args):
     """Speak to the listening users in this room."""
-    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
-    if len(notify) == self.throng_cutoff:
-      return "You can't make yourself heard over the throng."
     # TODO(dichro): want the original string here instead. Change
     #   cmd api to be kwargs with everything inc kitchen sink
-    actor.notify_others(actor.summary() + ' says: ' + ' '.join(args), notify)
+    if not self.broadcast(actor, actor.summary() + ' says: ' + ' '.join(args)):
+      return "You can't make yourself heard over the throng."
     return 'You say: ' + ' '.join(args)
 
   def cmd_go(self, actor, cmd, args):
@@ -56,13 +54,7 @@ class Room(object):
     destination = self.exits[cmd]
     dest_room = get_class(destination)(destination)
     response = dest_room.receive_mobile(actor)
-    notify = db.Avatar.all().filter("location =", self.get_location()).filter("tags =", "listening").fetch(self.throng_cutoff)
-    if len(notify) == self.throng_cutoff:
-      # TODO(dichro): throng mode!
-      pass
-    else:
-      if len(notify) > 0:
-        actor.notify_others(actor.summary() + ' leaves ' + cmd + '.', notify)
+    self.broadcast(actor, actor.summary() + ' leaves ' + cmd + '.')
     return 'You went ' + cmd + '. ' + response
     
   def cmd_look(self, actor, argv0, args):
