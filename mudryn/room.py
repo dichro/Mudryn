@@ -110,3 +110,19 @@ class Room(object):
       if len(results) > 0:
         actor.notify_others(actor.summary() + ' arrives.', results)
     return self.description(actor)
+
+
+def macro(package):
+  """Returns a function for easily creating rooms in package."""
+  def room(**kwargs):
+    def maybe_prepend_package(p):
+      if '.' in p:
+        return p
+      return '.'.join([package, p])
+    class new_room(Room):
+      desc = kwargs.get('desc')
+      exits = dict((x, maybe_prepend_package(y)) for x, y in kwargs.get('exits').iteritems())
+    return new_room
+  return room
+
+
