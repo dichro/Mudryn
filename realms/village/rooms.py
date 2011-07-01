@@ -12,6 +12,7 @@ def room(d, e):
 
 start = room('You are in a day care center.', {
   'out': 'square',
+  'down': 'realms.tutorial.rooms.start',
 })
 
 square = room('You are in a square. East is the day care center; '
