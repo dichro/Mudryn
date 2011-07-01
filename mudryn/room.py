@@ -25,6 +25,7 @@ class Room(object):
     self.commands['say'] = self.cmd_say
     # TODO(dichro): commands exist if self.cmd_<verb> exists?
     self.commands['emote'] = self.cmd_emote
+    self.commands['debug'] = self.cmd_debug
 
   def broadcast(self, actor, message):
     """Broadcast message unless thronging."""
@@ -34,6 +35,10 @@ class Room(object):
     actor.notify_others(message, notify)
     return True
     
+  def cmd_debug(self, actor, cmd, args):
+    """Dump some debugging information."""
+    return 'exits: ' + '; '.join('%s: %s' % (x, y) for x, y in self.exits.iteritems())
+
   def cmd_emote(self, actor, cmd, args):
     """Emote to the room's listeners."""
     msg = actor.summary() + ' ' + ' '.join(args)
