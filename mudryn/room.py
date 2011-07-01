@@ -82,7 +82,7 @@ class Room(object):
       ret += ' You can go: '
       exit_names = self.exits.keys()
       if len(exit_names) > 1:
-        ret += ', '.join(x for x in exit_names[:-1]) + ' and '
+        ret += ', '.join(x for x in exit_names[:-1]) + ' or '
       ret += exit_names[-1] + '.'
     return ret
 
