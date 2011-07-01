@@ -26,7 +26,7 @@ class InputHandler(object):
     if words[0] == 'create':
       # TODO(dichro): sanitize input
       xmpp.send_message([message.sender], 'Creating!')
-      Avatar(identity=db.IM("xmpp", message.sender), 
+      Avatar(key_name=db.IM("xmpp", message.sender).address,
              location=config.default_room, handle=words[1], 
              tags=['listening']).put()
       xmpp.send_message([message.sender], 'Done')
@@ -43,9 +43,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
   def text_message(self, message=None):
     sender = db.IM("xmpp", message.sender)
-    q_avatar = Avatar.all();
-    q_avatar.filter("identity =", sender);
-    avatar = q_avatar.get();
+    avatar = Avatar.get_by_key_name(sender.address)
     if avatar is None:
       InputHandler.handle_input(message)
     else:

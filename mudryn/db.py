@@ -19,7 +19,6 @@ class Mobile(polymodel.PolyModel):
 
 
 class Avatar(Mobile):
-  identity = db.IMProperty(required=True)
   handle = db.TextProperty(required=True)
   tags = db.StringListProperty()
   char_aliases = {
@@ -28,7 +27,7 @@ class Avatar(Mobile):
   }
 
   def notify_others(self, message, destinations):
-    dest = [avatar.identity.address for avatar in destinations
+    dest = [avatar.key().name() for avatar in destinations
             if avatar != self]
     if len(dest) == 0:
       return
@@ -47,11 +46,11 @@ class Avatar(Mobile):
     if words[0] == 'mute':
       self.tags.remove('listening')
       self.put()
-      xmpp.send_message([self.identity.address], 'Going catatonic. '
+      xmpp.send_message([self.key().name()], 'Going catatonic. '
         'Type "unmute" to hear the world again.')
       return
     if 'listening' not in self.tags:
-      xmpp.send_message([self.identity.address], 'You are muted! '
+      xmpp.send_message([self.key().name()], 'You are muted! '
         'Type "unmute" to hear the world again.')
     try:
       line = self.char_aliases[line[0]] + ' ' + line[1:]
@@ -60,7 +59,7 @@ class Avatar(Mobile):
     try:
       room = get_class(self.location)(self.location)
     except:
-      xmpp.send_message([self.identity.address],
+      xmpp.send_message([self.key().name()],
                         'Failed to load your last location. Sending you back '
                         'to the start.')
       room = get_class(config.default_room)(config.default_room)
@@ -68,18 +67,18 @@ class Avatar(Mobile):
       self.put()
     ret = room.handle_input(self, line)
     if ret is not None:
-      xmpp.send_message([self.identity.address], ret)
+      xmpp.send_message([self.key().name()], ret)
     else:
-      xmpp.send_message([self.identity.address], "I don't recognize that command")
+      xmpp.send_message([self.key().name()], "I don't recognize that command")
 
   def __eq__(self, other):
-    return hasattr(other, 'identity') and other.identity == self.identity
+    return self.key() == other.key()
 
   def __ne__(self, other):
     return not self.__eq__(other)
 
   def __hash__(self):
-    return self.identity.__hash__()
+    return self.key().__hash__()
 
 
 
